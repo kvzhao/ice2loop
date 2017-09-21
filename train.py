@@ -24,7 +24,6 @@ tf.logging.set_verbosity(tf.logging.INFO)
 
 def main():
     model_config = configurations.ModelConfig()
-    training_config = configurations.TrainingConfig()
 
     # Create directory
     logdir = FLAGS.logdir
