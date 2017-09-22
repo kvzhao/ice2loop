@@ -72,8 +72,6 @@ class IceToLoopModel(object):
             sequence_embeddings = tf.nn.embedding_lookup(embedding_map, self.input_sequences)
             self.sequence_embeddings = sequence_embeddings
             print ('Shape of sequence embedding')
-            print (self.sequence_embeddings)
-            print (self.sequence_embeddings.get_shape())
 
     def build_model(self):
         print ('Build Ice2Loop Model')
@@ -88,7 +86,6 @@ class IceToLoopModel(object):
                 output_keep_prob=self.config.lstm_dropout_keep_prob)
         with tf.variable_scope('SequenceDecoder', initializer=self.initializer) as lstm_scope:
             # Feed the image embeddings to set the initial LSTM state
-            print (self.image_embeddings.get_shape())
             zero_state = lstm_cell.zero_state(
                 batch_size=tf.shape(self.image_embeddings)[0], dtype=tf.float32)
                 # need more care about
@@ -118,7 +115,6 @@ class IceToLoopModel(object):
                 tf.concat(axis=1, values=state_tuple, name="state")
             else:
                 sequence_length = tf.reduce_sum(self.input_masks, axis=1)
-                print (sequence_length)
                 lstm_outputs, _ = tf.nn.dynamic_rnn(cell=lstm_cell,
                                                     inputs=self.sequence_embeddings,
                                                     sequence_length=sequence_length,
@@ -127,12 +123,7 @@ class IceToLoopModel(object):
                                                     scope=lstm_scope)
         # stack batches vertically
         # TODO: catch this up
-        print ('lstm_output')
-        print (lstm_outputs)
         lstm_outputs = tf.reshape(lstm_outputs, [-1, lstm_cell.output_size])
-
-        print ('lstm_output')
-        print (lstm_outputs)
 
         with tf.variable_scope('Logits') as logits_scope:
             logits = tf.contrib.layers.fully_connected(
@@ -142,20 +133,14 @@ class IceToLoopModel(object):
                 weights_initializer=self.initializer,
                 scope=logits_scope)
             
-        print ('logits')
-        print (logits)
-
         if self.mode == 'inference':
             tf.nn.softmax(logits, name='softmax')
         else:
             targets = tf.reshape(self.target_sequences, [-1])
             weights = tf.to_float(tf.reshape(self.input_masks, [-1]))
-            print (targets)
-            print (weights)
 
             # Compute losses
             losses = tf.nn.sparse_softmax_cross_entropy_with_logits(labels=targets, logits=logits)
-            print (losses)
             batch_loss = tf.div(tf.reduce_sum(tf.multiply(losses, weights)),
                                 tf.reduce_sum(weights),
                                 name='batch_loss')
