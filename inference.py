@@ -3,6 +3,7 @@ from __future__ import division
 from __future__ import print_function
 
 import os, sys
+import json
 import numpy as np
 import tensorflow as tf
 import matplotlib.pyplot as plt
@@ -10,11 +11,18 @@ import matplotlib.pyplot as plt
 from ice2loop_model import IceToLoopModel
 from data.data_utils import DataReader
 from data.loopalgo import *
-import configurations
 
 tf.app.flags.DEFINE_string('ckpt_dir', 'logs/ice2loop', 'Path to the checkpoint directory')
-
 FLAGS = tf.app.flags.FLAGS
+
+def read_config(path):
+    config_path = os.path.join(path, 'config.json')
+    with open(config_path) as file:
+        saved = json.load(file)
+    class Config:
+        def __init__(self, **entries):
+            self.__dict__.update(entries)
+    return Config(**saved)
 
 
 def load_model(sess, config):
@@ -31,10 +39,8 @@ def load_model(sess, config):
 
 
 def inference():
-    config = configurations.ModelConfig()
-
-    data = DataReader('data/MarkovSet.h5')
-
+    config = read_config(FLAGS.ckpt_dir)
+    data = DataReader(config.data_path)
 
     with tf.Session() as sess:
         model = load_model(sess, config)
