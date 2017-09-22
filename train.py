@@ -10,11 +10,10 @@ import tensorflow as tf
 from ice2loop_model import IceToLoopModel
 from data.data_utils import DataReader
 
-# Name
-tf.app.flags.DEFINE_string('name', 'ice2loop', 'Name of this program')
 # Folder & Path
 tf.app.flags.DEFINE_string('logdir', 'logs', 'Dir of training logs')
 tf.app.flags.DEFINE_string('task_name', 'ice2loop', 'Name of this training task')
+tf.app.flags.DEFINE_string('data_path', 'data/MarkovSet.h5', 'The path of training dataset')
 
 # Data Information & format
 tf.app.flags.DEFINE_integer('image_height', 32, 'Size of input configuration')
@@ -55,10 +54,9 @@ FLAGS = tf.app.flags.FLAGS
 # first time using this
 tf.logging.set_verbosity(tf.logging.INFO)
 
-print ('{} is executing '.format(FLAGS.name))
+print ('Task: {} is launching... '.format(FLAGS.task_name)
 
 def main():
-    # TODO: save configs into logfile
     model_config = FLAGS
 
     # Create directory
@@ -74,6 +72,12 @@ def main():
         # The model already exist
         print ('Existing model.')
     
+    # Save configs
+    config = dict(FLAGS.__flags.items())
+    with open(os.path.join(train_dir, 'config.json'), 'w') as file:
+        json.dump(config, file)
+    print ('Save training configuration to {}.'.format(train_dir))
+
     # Build Graph
     g = tf.Graph()
     with g.as_default():
@@ -93,7 +97,7 @@ def main():
             data = DataReader('data/MarkovSet.h5')
             num_samples = data.num_samples
 
-            # Initailize the network
+            # Initailize the network parameters
             sess.run(tf.global_variables_initializer())
 
             # Run training.
@@ -103,9 +107,11 @@ def main():
 
                 step_loss, summary = model.train_step(sess, image_batch, input_batch, target_batch, mask_batch)
 
+                # TODO save validation accuracy
                 if step % FLAGS.eval_freq == 0:
                     print ('Step[ {} ]: step loss = {}'.format(step, step_loss))
                     logwriter.add_summary(summary, step)
+
                 if step % FLAGS.save_freq == 0:
                     checkpoint_path = os.path.join(train_dir, 'Ice2Loop')
                     model.save(sess, checkpoint_path)
