@@ -54,11 +54,9 @@ FLAGS = tf.app.flags.FLAGS
 # first time using this
 tf.logging.set_verbosity(tf.logging.INFO)
 
-print ('Task: {} is launching... '.format(FLAGS.task_name)
+print ('Task: {} is launching... '.format(FLAGS.task_name))
 
 def main():
-    model_config = FLAGS
-
     # Create directory
     logdir = FLAGS.logdir
     if not tf.gfile.IsDirectory(logdir):
@@ -81,21 +79,23 @@ def main():
     # Build Graph
     g = tf.Graph()
     with g.as_default():
+        model_config = FLAGS
         model = IceToLoopModel(model_config, 'train')
+
+        # Build the model
         model.build_all()
-        # Set up training rate (TODO)
+
         # Set up training operations
         model.init_optimizer()
-
-        batch_size = model_config.batch_size
 
         logwriter = tf.summary.FileWriter(train_dir, graph=g)
     
     # Set up the Saver and Restoration
         with tf.Session() as sess:
             # Data Reader
-            data = DataReader('data/MarkovSet.h5')
+            data = DataReader(FLAGS.data_path)
             num_samples = data.num_samples
+            batch_size = FLAGS.batch_size
 
             # Initailize the network parameters
             sess.run(tf.global_variables_initializer())
