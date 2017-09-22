@@ -18,10 +18,13 @@ class IceToLoopModel(object):
         sqrt3 = math.sqrt(3)
         self.initializer = tf.random_uniform_initializer(-sqrt3, sqrt3)
 
+        self.num_sites = config.image_height * config.image_width * config.image_channel
+        self.image_shape = [self.num_sites]
+
     def init_placeholders(self):
         if self.mode == 'inference':
             image_feed = tf.placeholder(dtype=tf.float32,
-                            shape=[None, ] + self.config.image_shape,
+                            shape=[None, ] + self.image_shape,
                             name='image_feed')
             #self.images = image_feed
             self.images = tf.expand_dims(image_feed, 0)
@@ -33,7 +36,7 @@ class IceToLoopModel(object):
             self.target_sequences = None
         else:
             self.images = tf.placeholder(dtype=tf.float32,
-                            shape=[None, ] + self.config.image_shape,
+                            shape=[None, ] + self.image_shape,
                             name='images')
             self.input_sequences = tf.placeholder(dtype=tf.int32, 
                                         shape=[None, self.config.max_loop_size-1], name='input_sequences')
@@ -64,7 +67,7 @@ class IceToLoopModel(object):
         with tf.variable_scope('LoopSiteEmbedding'), tf.device('/cpu:0'):
             embedding_map = tf.get_variable(
                 name='map',
-                shape=[self.config.num_sites, self.config.embedding_size],
+                shape=[self.num_sites, self.config.embedding_size],
                 initializer=self.initializer)
             sequence_embeddings = tf.nn.embedding_lookup(embedding_map, self.input_sequences)
             self.sequence_embeddings = sequence_embeddings
@@ -134,7 +137,7 @@ class IceToLoopModel(object):
         with tf.variable_scope('Logits') as logits_scope:
             logits = tf.contrib.layers.fully_connected(
                 inputs=lstm_outputs,
-                num_outputs=self.config.num_sites,
+                num_outputs=self.num_sites,
                 activation_fn=None,
                 weights_initializer=self.initializer,
                 scope=logits_scope)
