@@ -13,14 +13,14 @@ from data.data_utils import DataReader
 # Folder & Path
 tf.app.flags.DEFINE_string('logdir', 'logs', 'Dir of training logs')
 tf.app.flags.DEFINE_string('task_name', 'ice2loop', 'Name of this training task')
-tf.app.flags.DEFINE_string('data_path', 'data/MarkovSet.h5', 'The path of training dataset')
+tf.app.flags.DEFINE_string('data_path', 'data/IceLoop.h5', 'The path of training dataset')
 
 # Data Information & format
 tf.app.flags.DEFINE_integer('image_height', 32, 'Size of input configuration')
 tf.app.flags.DEFINE_integer('image_width', 32, 'Size of input configuration')
 tf.app.flags.DEFINE_integer('image_channel', 1, 'Depth of input configuration')
 tf.app.flags.DEFINE_integer('num_sites', 32 * 32 * 1, 'Number of sites in input configuration')
-tf.app.flags.DEFINE_integer('max_loop_size', 12, 'Maximum of input sequence length, padding when exceeded')
+tf.app.flags.DEFINE_integer('max_loop_size', 20, 'Maximum of input sequence length, padding when exceeded')
 
 # Architectures: CNN & LSTM
 tf.app.flags.DEFINE_integer('conv1_filters', 32, 'Number of convolutional filters')
