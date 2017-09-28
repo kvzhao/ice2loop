@@ -2,6 +2,25 @@ import numpy as np
 import h5py as hf
 import sys, os
 
+def get_filelist(source_idx, prefix='loopstate', dirname='loops'):
+    files = os.listdir(dirname)
+    filelist = []
+    for f in files:
+        if str.startswith(f, prefix):
+            fname = f.rstrip('.npy')
+            trans = fname.split('_')[-1]
+            from_idx, to_idx = trans.split('-')
+            if (int(from_idx) == source_idx):
+                #print ('read file: {}'.format(fname))
+                filelist.append(f)
+    return filelist
+
+def read_filelist(filelist, dirname='loops'):
+    loops = []
+    for f in filelist:
+        loops.extend(np.load('/'.join([dirname, f]))[0])
+    return loops
+
 def get_mask(sequences):
     return [0 if s == 0 else 1 for s in sequences[1:]]
 
@@ -15,20 +34,27 @@ def read_markovchain_dataset(dataset_path):
     dataset = hf.File(dataset_path, 'r')
     num_states = len(dataset.keys()) / 2
     print ('{} dataset contains {} initial states'.format(dataset_path, num_states))
-
     states, loops = [], []
     for i in range(num_states):
         states.extend(dataset['MC_{}_states'.format(i)][:])
         loops.extend(dataset['MC_{}_loops'.format(i)][:])
     dataset.close()
+    return np.array(states), np.array(loops)
 
+def read_iceloop_dataset(dataset_path):
+    dataset = hf.File(dataset_path, 'r')
+    states, loops = [], []
+    states = dataset['STATES'][:]
+    loops = dataset['LOOPS'][:]
     return np.array(states), np.array(loops)
 
 class DataReader(object):
     def __init__(self, dataset_path):
         self.dataset_path = dataset_path
 
-        states, loops = read_markovchain_dataset(self.dataset_path)
+        # TODO: change to IceLoop format
+        #states, loops = read_markovchain_dataset(self.dataset_path)
+        states, loops = read_iceloop_dataset(self.dataset_path)
         masks = get_batch_mask(loops)
 
         self.images = states
