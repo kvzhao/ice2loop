@@ -103,7 +103,7 @@ def main():
             # Run training.
             for step in range(FLAGS.num_steps):
 
-                image_batch, input_batch, target_batch, mask_batch = data.next_batch(batch_size)
+                image_batch, input_batch, target_batch, mask_batch = data.next_batch(batch_size, shuffle=True)
 
                 step_loss, summary = model.train_step(sess, image_batch, input_batch, target_batch, mask_batch)
 
