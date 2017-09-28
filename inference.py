@@ -9,11 +9,19 @@ import tensorflow as tf
 import matplotlib.pyplot as plt
 
 from ice2loop_model import IceToLoopModel
-from data.data_utils import DataReader
+from data.inference_utils import InferenceData
+from data.inference_utils import *
 from data.loopalgo import *
 
 tf.app.flags.DEFINE_string('ckpt_dir', 'logs/ice2loop', 'Path to the checkpoint directory')
+tf.app.flags.DEFINE_string('test_data', 'data/squareice_states_10000x1024.h5', 'Path to testing dataset')
+tf.app.flags.DEFINE_string('results', 'resutls', 'Folder name of expieriments results')
+#tf.app.flags.DEFINE_string('eval_mode', 'demo', 'Modes of evaluation ()')
+
 FLAGS = tf.app.flags.FLAGS
+
+if not tf.gfile.IsDirectory(FLAGS.results):
+    tf.gfile.MakeDirs(FLAGS.results)
 
 def read_config(path):
     config_path = os.path.join(path, 'config.json')
@@ -23,7 +31,6 @@ def read_config(path):
         def __init__(self, **entries):
             self.__dict__.update(entries)
     return Config(**saved)
-
 
 def load_model(sess, config):
     model = IceToLoopModel(config, 'inference')
@@ -37,100 +44,53 @@ def load_model(sess, config):
         )
     return model
 
+def calculate_acceptance():
+    # Calculate for all images
+    pass
+
+
+def single_image_analysis (sess, model, image, max_steps=20):
+    # Create the folder for saving reuslts
+    folderpath = os.path.join(FLAGS.results, 'single_image_update')
+    if not tf.gfile.IsDirectory(folderpath):
+        tf.gfile.MakeDirs(folderpath)
+
+    # Create the denoted starting point
+    #start_site = np.random.randint(1024)
+    start_site = 200
+    image[0, start_site] = 0
+    print ('start point {}'.format(start_site))
+
+    loops = []
+    state = model.feed_image(sess, image)
+    site = start_site
+
+    for step in range(max_steps):
+        softmax, new_state, _ = model.inference_step(sess, input_feed=[site], state_feed=state)
+        state = new_state
+        new_site = np.argmax(softmax)
+        # probability map, maybe this information is useful
+        prob = np.max(softmax)
+        imshow_probmap(softmax, folderpath, 'probmap_{}'.format(step))
+        print ('site {} with confid {}'.format(site, prob))
+        site = new_site
+        # shift loop site back    
+        loops.append(site - 1)
+
+    imshow_loop(loops, folderpath, 'genloop')
+
+    return loops
 
 def inference():
     config = read_config(FLAGS.ckpt_dir)
-    data = DataReader(config.data_path)
+    data = InferenceData(FLAGS.test_data)
 
     with tf.Session() as sess:
         model = load_model(sess, config)
+        ice = data.next_batch(1)
 
-        num_samples = data.num_samples
-        print ('Number of sample data: {}'.format(num_samples))
-
-        ices, [input_seq], [target_seq], [mask_seq] = data.next_batch(1)
-        initial_state = model.feed_image(sess, ices)
-
-        print (initial_state.shape)
-        print (input_seq)
-        print (input_seq.shape)
-        state = initial_state
-        site = input_seq[0]
-
-        ground_loop = []
-        loop_sites = []
-        confidence_loops = []
-        ground_loop.append(site)
-        confidence_loops.append(1)
-        ground_loop.extend(target_seq)
-
-        print ('Ground loop: {}'.format(ground_loop))
-        loop_sites.append(site)
-
-        print (mask_seq)
-        max_steps = np.sum(mask_seq)
-
-        for step in range(max_steps):
-            softmax, new_state, _ = model.inference_step(sess,
-                                                        input_feed=[site],
-                                                        state_feed=state)
-            new_state = initial_state
-            site = np.argmax(softmax)
-            prob = np.max(softmax)
-            print ('Target Site: {}, Predict Site: {} with p={}'.format(target_seq[step], site, prob))
-            if site == 0:
-                break
-            else:
-                loop_sites.append(site)
-                confidence_loops.append(prob)
-        
-        ground_truth = np.zeros(1024)
-        predict = np.zeros(1024)
-        confidence_map = np.zeros(1024)
-
-        for s in ground_loop:
-            if s != 0:
-                ground_truth[s] = 1
-
-        for s, p in zip(loop_sites, confidence_loops):
-            if s != 0:
-                predict[s] = 1 
-                confidence_map[s] = p
-
-        is_accept = pseudo_metropolis(ices[0], ground_loop, 32, prefix='loopsites')
-        if is_accept:
-            print ('Ground truth is Accept, {}'.format(ground_loop))
-        is_accept = pseudo_metropolis(ices[0], loop_sites, 32, prefix='loopsites')
-        if is_accept:
-            print ('Generated Loop is Accept, {}'.format(loop_sites))
-        else:
-            print ('Generated Loop is Reject! {}'.format(loop_sites))
-
-        fig = plt.figure()
-        ax1 = fig.add_subplot(121)
-        ax1.imshow(ground_truth.reshape(32,32), interpolation='None', cmap='plasma')
-        ax1.set_xlabel('Ground Truth')
-
-        ax2 = fig.add_subplot(122)
-        ax2.imshow(predict.reshape(32,32), interpolation='None', cmap='plasma')
-        ax2.set_xlabel('Prediction')
-
-        '''
-        ax3 = fig.add_subplot(133)
-        ax3.imshow(confidence_map.reshape(32,32), interpolation='None', cmap='plasma')
-        ax3.set_xlabel('Confidence')
-        cbar = fig.colorbar(ax3, ticks=[-1, 0, 1], orientation='vertical')
-        '''
-        #cbar.ax.set_yticklabels(['Low', 'Medium', 'High'])  # horizontal colorbar
-
-        plt.tight_layout()
-        plt.savefig('ice2loop.png')
-        plt.show()
-
-        plt.imshow(confidence_map.reshape(32,32), interpolation='None', cmap='plasma')
-        plt.colorbar()
-        plt.savefig('confidence.png')
-        plt.show()
+        loop = single_image_analysis(sess, model, ice)
+        print (loop)
 
 
 def main():
