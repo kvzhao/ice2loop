@@ -23,28 +23,28 @@ class ConvNet(object):
         self.input_img_shape = [self.image_width, self.image_height, self.image_channel]
     
     def build_model(self, inputs):
-        print ('Start building model...')
+        print ('\tStart building model...')
         self._build_convet(inputs)
 
         tf.contrib.layers.summarize_collection(tf.GraphKeys.TRAINABLE_VARIABLES)
 
         return self.features
 
-        print ('Done.')
+        print ('\tDone.')
     
     def _init_placeholders(self):
         # image format: NHWC
-        print ('Init placeholders')
+        print ('\t\tInit placeholders')
         img_size = self.image_height * self.image_width * self.image_channel
         self.inputs = tf.placeholder(dtype=tf.float32, shape=[None, img_size], name='img_inputs')
     
     def _build_convet(self, inputs):
-        print ('Init ConvNet')
+        print ('\t\tInit ConvNet')
         shape = inputs.get_shape()[1:]
         if (shape == self.input_img_shape):
-            print ('Image shape is same as inputs shape')
+            print ('\t\tImage shape is same as inputs shape')
         else:
-            print ('Shape does not match, reshape from {} to {}'.format(shape, self.input_img_shape))
+            print ('\t\tShape does not match, reshape from {} to {}'.format(shape, self.input_img_shape))
             inputs = tf.reshape(inputs, [-1, self.image_height, self.image_width, self.image_channel])
         conv1 = tf.layers.conv2d(inputs,
                             filters=self.conv1_filters,

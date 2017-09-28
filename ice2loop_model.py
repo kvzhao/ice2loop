@@ -47,7 +47,7 @@ class IceToLoopModel(object):
             #Q: why we should assign shape here?
 
     def build_image_embedding(self):
-        print ('Build image embedding')
+        print ('\tBuild image embedding')
         with tf.variable_scope('ConvNet') as scope:
             convnet = ConvNet(self.config, self.mode)
             cnn_output = convnet.build_model(self.images)
@@ -63,7 +63,7 @@ class IceToLoopModel(object):
         self.image_embeddings = image_embeddings
 
     def build_sequence_embedding(self):
-        print ('Build sequence embedding')
+        print ('\tBuild sequence embedding')
         with tf.variable_scope('LoopSiteEmbedding'), tf.device('/cpu:0'):
             embedding_map = tf.get_variable(
                 name='map',
@@ -71,10 +71,10 @@ class IceToLoopModel(object):
                 initializer=self.initializer)
             sequence_embeddings = tf.nn.embedding_lookup(embedding_map, self.input_sequences)
             self.sequence_embeddings = sequence_embeddings
-            print ('Shape of sequence embedding')
+            print ('\tShape of sequence embedding')
 
     def build_model(self):
-        print ('Build Ice2Loop Model')
+        print ('\tBuild Ice2Loop Model')
         # TODO: handle multiple layers
         lstm_cell = tf.contrib.rnn.BasicLSTMCell(
             num_units=self.config.num_lstm_units, state_is_tuple=True)
@@ -157,7 +157,7 @@ class IceToLoopModel(object):
             self.target_cross_entropy_loss_weights = weights  # Used in evaluation.
     
     def setup_global_step(self):
-        print ('Set global step')
+        print ('\tSet global step')
         global_step = tf.Variable(initial_value=0, trainable=False, name='global_step',
             collections=[tf.GraphKeys.GLOBAL_STEP, tf.GraphKeys.GLOBAL_VARIABLES])
         self.global_step = global_step
