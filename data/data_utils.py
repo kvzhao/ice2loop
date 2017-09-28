@@ -65,6 +65,8 @@ class DataReader(object):
         self._num_of_samples = self.images.shape[0]
         self._epochs_completed = 0
         self._index_in_epoch = 0
+        
+        print ('Load dataset with {} images from {}'.format(self._num_of_samples, self.dataset_path))
 
     @property
     def num_samples(self):
