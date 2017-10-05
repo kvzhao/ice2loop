@@ -57,7 +57,7 @@ def single_image_analysis (sess, model, image, max_steps=20):
 
     # Create the denoted starting point
     #start_site = np.random.randint(1024)
-    start_site = 200
+    start_site = 53
     image[0, start_site] = 0
     print ('start point {}'.format(start_site))
 
@@ -67,7 +67,7 @@ def single_image_analysis (sess, model, image, max_steps=20):
 
     for step in range(max_steps):
         softmax, new_state, _ = model.inference_step(sess, input_feed=[site], state_feed=state)
-        state = new_state
+        #state = new_state
         new_site = np.argmax(softmax)
         # probability map, maybe this information is useful
         prob = np.max(softmax)
